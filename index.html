@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Квиз</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f1f5f9;
+            --text: #334155;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; margin: 0; padding: 20px; }
+        
+        .container { max-width: 800px; margin: 0 auto; }
+        
+        .header { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
+        
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid var(--primary); }
+        
+        h1 { color: #1e293b; margin: 0; }
+        .warning-box { background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; margin-top: 15px; font-weight: bold; font-size: 0.9rem; }
+        
+        label { display: block; margin-bottom: 10px; font-weight: 600; font-size: 1.1rem; }
+        input[type="text"], textarea { 
+            width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; 
+            box-sizing: border-box; font-size: 1rem; transition: border 0.3s;
+        }
+        input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        
+        button { 
+            background: var(--primary); color: white; border: none; padding: 15px 30px; 
+            border-radius: 8px; cursor: pointer; width: 100%; font-size: 1.2rem; font-weight: bold;
+            transition: transform 0.2s, background 0.3s;
+        }
+        button:hover { background: #1d4ed8; transform: translateY(-2px); }
+        button:disabled { background: #94a3b8; transform: none; }
+
+        .hidden { display: none; }
+        .success-card { text-align: center; padding: 50px; background: white; border-radius: 12px; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="quiz-container">
+    <div class="header">
+        <h1>Пре-тест</h1>
+        <div class="warning-box">
+            ВНИМАНИЕ: Не переключайте вкладки и не сворачивайте браузер! <br>
+            При уходе со страницы все ответы будут безвозвратно удалены.
+        </div>
+    </div>
+
+    <form id="quiz-form">
+        <div class="card">
+            <label for="user_name">Ваше Фамилия и Имя: <br> Аты жөнін жазыңыз:</label>
+            <input type="text" id="user_name" name="user_name" placeholder="Введите здесь..." required>
+        </div>
+
+        <div id="questions-placeholder"></div>
+
+        <button type="submit" id="submit-btn">Завершить и отправить ответы</button>
+    </form>
+</div>
+
+<div class="container hidden" id="success-msg">
+    <div class="success-card">
+        <h1 style="color: #059669;">Отправлено! ✅</h1>
+        <p>Ваши ответы успешно сохранены в базе данных. Можете закрыть вкладку.</p>
+    </div>
+</div>
+
+<script>
+    // 1. ВСТАВЬТЕ ВАШУ ССЫЛКУ /EXEC ТУТ
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxJptWWGKNkIKkJGPslX3wObLjC1GxBk-Wvu0XdEM8p2J2nCRbUWAlRKqmXUuKRf9w_7A/exec';
+
+    // 2. ВПИШИТЕ ВАШИ ВОПРОСЫ ТУТ
+    const questions = [
+
+    "Расшифруйте аббревиатуру Y-PEER.Что это значит?<br>Y-PEER аббревиатурасын толық жазыңыз. Ол не білдіреді?",
+    "В чем заключаются преимущества принципа «равный - равному»?<br>«Теңге-тең» әдісінің артықшылығы неде?",
+    "Какую роль играет UNFPA в развитии Y-PEER?<br>UNFPA Y-PEER-дің дамуында қандай рөл атқарады?",
+    "В чем разница между репродуктивным и сексуальным здоровьем?<br>Репродуктивті және сексуалды денсаулықтардың айырмашылығы неде?",
+    "Что такое репродуктивная система?<br>Репродуктивті жүйе дегеніміз не?",
+    "Какие органы входят в женскую репродуктивную систему?<br>Әйел адамдардың репродуктивті жүйесіне қандай мүшелер кіреді?",
+    "Какие органы входят в мужскую репродуктивную систему?<br>Ер адамдардың репродуктивті жүйесіне қандай мүшелер кіреді?",
+    "Какие существуют сексуально-репродуктивные права?<br>Қандай репродуктивті-сексуалды құқықтар бар?",
+    "Что такое пубертат?<br>Пубертат деген не?",
+    "Что такое поллюция?<br>Поллюция деген не?",
+    "Что такое менструация?<br>Менструация деген не?",
+    "Назовите первичные половые признаки<br>Бірінші реттік жыныстық белгілерді атаңыз",
+    "Назовите вторичные половые признаки<br>Екінші реттік жыныстық белгілерді атаңыз",
+    "Что такое ИППП и какие виды вы знаете?<br>ЖЖБИ деген не және сіз оның қандай түрлерін білесіз?",
+    "Какой вид ИППП не лечится (уходит только в ремиссию)?<br>ЖЖБИ-дің қандай түрі емделмейді (тек ремиссия)?",
+    "Расшифруйте правило 4B:<br>4B ережесін (4T ережесін) түсіндіріңіз",
+    "Что такое ВИЧ и как он передается?<br>АИТВ деген не және ол қалай беріледі?",
+    "Может ли передаться ВИЧ от укуса комара?<br>АИТВ масаның шаққанынан беріле алады ма?",
+    "Что такое период окна?<br>Терезе кезеңі деген не?",
+    "Что такое контрацепция?<br>Контрацепция деген не?",
+    "Является ли аборт методом контрацепции? Почему?<br>Түсік жасату контрацепция түрі болып табылады ма? Неге?",
+    "Что такое индекс Перля?<br>Перл индексі деген не?",
+    "Два презерватива = двойная защита?<br>Екі мүшеқап = екі еселенген қорғаныс па?",
+    "Что такое гендер и пол? В чем их отличия?<br>Жыныс және гендер деген не? Олардың айырмашылығы неде?",
+    "Что такое ориентация и на какие виды она делится?<br>Жыныс және гендер деген не? Олардың айырмашылығы неде?",
+    "Что такое феминизм?<br>Феменизм деген не?",
+    "Кто виноват в насилии?<br>Зорлық-зомбылықта кім кінәлі? Неге?",
+    "Что такое треугольник Карпмана?<br>Карпман үшбұрышы деген не?",
+    "Распишите цикл насилия<br>Зорлық-зомбылық циклін талдаңыз:",
+    "Что такое здоровье?<br>Денсаулық деген не?",
+    "Какие факторы влияют на здоровье?<br>Денсаулыққа не әсер етеді?",
+    "Что такое ПАВ?<br>Беттік белсенді заттар (ПАВ) деген не?",
+    "Какие есть аддикции?<br>Қандай тәуелділіктер (аддикциялар) бар?",
+    "Какие энерджайзеры для тренингов вы знаете?<br>Тренингтерге арналған қандай энерджайзерлер білесіз?",
+    "Какие универсальные упражнения вы знаете? (которые можно интегрировать в любой тренинг)<br>Қандай әмбебап жаттығулар сізге таныс? (кез келген тренингке кірістіруге болатын)",
+    "Какие будут ваши первые действия, если аудитория отвлекается/шумист во время тренинга?<br>Тренинг кезінде аудитория алаңдаса/шуылдаса, сіздің бірінші әрекеттеріңіз қандай болады?",
+    ];
+
+    const form = document.getElementById('quiz-form');
+    const placeholder = document.getElementById('questions-placeholder');
+
+    // Генерация вопросов на странице
+    questions.forEach((qText, index) => {
+        const qNum = index + 1;
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+            <label>${qNum}. ${qText}</label>
+            <textarea id="q${qNum}" name="q${qNum}" rows="3" placeholder="Ваш ответ..." required></textarea>
+        `;
+        placeholder.appendChild(card);
+    });
+
+    const allInputs = () => form.querySelectorAll('input, textarea');
+
+    // Восстановление данных из sessionStorage
+    window.addEventListener('load', () => {
+        allInputs().forEach(input => {
+            const saved = sessionStorage.getItem(input.id);
+            if (saved) input.value = saved;
+        });
+    });
+
+    // Сохранение при вводе
+    form.addEventListener('input', (e) => {
+        if (e.target.id) sessionStorage.setItem(e.target.id, e.target.value);
+    });
+
+    // АНТИ-СПИСЫВАНИЕ (Стираем всё при уходе со вкладки)
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            sessionStorage.clear();
+            alert('ПРАВИЛА НАРУШЕНЫ: Вы покинули страницу. Все ответы удалены. Начните заново.');
+            window.location.reload();
+        }
+    });
+
+    // Отправка данных
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = true;
+        btn.innerText = 'Идет сохранение в таблицу... подождите';
+
+        const formData = new FormData(form);
+
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: formData
+            });
+
+            sessionStorage.clear();
+            document.getElementById('quiz-container').classList.add('hidden');
+            document.getElementById('success-msg').classList.remove('hidden');
+            window.scrollTo(0,0);
+        } catch (err) {
+            alert('Ошибка сети. Проверьте интернет и попробуйте еще раз.');
+            btn.disabled = false;
+        }
+    });
+</script>
+
+</body>
+</html>
